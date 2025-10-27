@@ -1,0 +1,494 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>下班倒计时</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: 'Segoe UI', 'Microsoft YaHei', sans-serif;
+        }
+
+        body {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: #333;
+            min-height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            padding: 20px;
+        }
+
+        .container {
+            width: 100%;
+            max-width: 600px;
+            background-color: rgba(255, 255, 255, 0.9);
+            border-radius: 20px;
+            box-shadow: 0 15px 30px rgba(0, 0, 0, 0.2);
+            overflow: hidden;
+            padding: 30px;
+            animation: fadeIn 0.5s ease-out;
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(20px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        header {
+            text-align: center;
+            margin-bottom: 30px;
+        }
+
+        h1 {
+            color: #5a67d8;
+            font-size: 2.2rem;
+            margin-bottom: 10px;
+        }
+
+        .subtitle {
+            color: #718096;
+            font-size: 1.1rem;
+        }
+
+        .status-card {
+            background: white;
+            border-radius: 15px;
+            padding: 25px;
+            margin-bottom: 25px;
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.05);
+            text-align: center;
+            transition: transform 0.3s ease;
+        }
+
+        .status-card:hover {
+            transform: translateY(-5px);
+        }
+
+        .emoji {
+            font-size: 4rem;
+            margin-bottom: 15px;
+            animation: pulse 2s infinite;
+        }
+
+        @keyframes pulse {
+            0% { transform: scale(1); }
+            50% { transform: scale(1.1); }
+            100% { transform: scale(1); }
+        }
+
+        .message {
+            font-size: 1.5rem;
+            font-weight: 600;
+            margin-bottom: 15px;
+            color: #2d3748;
+        }
+
+        .time-left {
+            font-size: 1.8rem;
+            font-weight: 700;
+            color: #5a67d8;
+            margin-bottom: 20px;
+        }
+
+        .progress-container {
+            margin: 25px 0;
+        }
+
+        .progress-info {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 8px;
+            font-size: 0.9rem;
+            color: #718096;
+        }
+
+        .progress-bar {
+            height: 12px;
+            background-color: #e2e8f0;
+            border-radius: 10px;
+            overflow: hidden;
+        }
+
+        .progress-fill {
+            height: 100%;
+            background: linear-gradient(to right, #4fd1c5, #5a67d8);
+            border-radius: 10px;
+            transition: width 0.5s ease;
+        }
+
+        .time-info {
+            display: flex;
+            justify-content: space-between;
+            margin-top: 10px;
+            font-size: 0.9rem;
+            color: #718096;
+        }
+
+        .settings {
+            margin-top: 30px;
+        }
+
+        .settings h2 {
+            font-size: 1.3rem;
+            margin-bottom: 15px;
+            color: #4a5568;
+            text-align: center;
+        }
+
+        .time-inputs {
+            display: flex;
+            flex-wrap: wrap;
+            justify-content: space-between;
+            gap: 15px;
+        }
+
+        .input-group {
+            flex: 1;
+            min-width: 140px;
+        }
+
+        label {
+            display: block;
+            margin-bottom: 5px;
+            font-weight: 500;
+            color: #4a5568;
+        }
+
+        input[type="time"] {
+            width: 100%;
+            padding: 10px;
+            border: 1px solid #cbd5e0;
+            border-radius: 8px;
+            font-size: 1rem;
+            transition: border-color 0.3s;
+        }
+
+        input[type="time"]:focus {
+            outline: none;
+            border-color: #5a67d8;
+            box-shadow: 0 0 0 3px rgba(90, 103, 216, 0.2);
+        }
+
+        .footer {
+            text-align: center;
+            margin-top: 25px;
+            color: #718096;
+            font-size: 0.9rem;
+        }
+
+        @media (max-width: 480px) {
+            .container {
+                padding: 20px;
+            }
+
+            h1 {
+                font-size: 1.8rem;
+            }
+
+            .emoji {
+                font-size: 3rem;
+            }
+
+            .message {
+                font-size: 1.3rem;
+            }
+
+            .time-left {
+                font-size: 1.5rem;
+            }
+
+            .time-inputs {
+                flex-direction: column;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>下班倒计时</h1>
+            <p class="subtitle">实时追踪您的工作进度</p>
+        </header>
+
+        <main>
+            <div class="status-card">
+                <div class="emoji" id="emoji">😊</div>
+                <div class="message" id="message">计算中...</div>
+                <div class="time-left" id="time-left">00:00:00</div>
+
+                <div class="progress-container">
+                    <div class="progress-info">
+                        <span>工作进度</span>
+                        <span id="progress-percent">0%</span>
+                    </div>
+                    <div class="progress-bar">
+                        <div class="progress-fill" id="progress-fill" style="width: 0%"></div>
+                    </div>
+                    <div class="time-info">
+                        <span id="worked-time">已工作: 0小时</span>
+                        <span id="remaining-time">剩余: 0小时</span>
+                    </div>
+                </div>
+            </div>
+
+            <div class="settings">
+                <h2>工作时间设置</h2>
+                <div class="time-inputs">
+                    <div class="input-group">
+                        <label for="start-time">上班时间</label>
+                        <input type="time" id="start-time" value="09:00">
+                    </div>
+                    <div class="input-group">
+                        <label for="end-time">下班时间</label>
+                        <input type="time" id="end-time" value="18:00">
+                    </div>
+                    <div class="input-group">
+                        <label for="rest-start">午休开始</label>
+                        <input type="time" id="rest-start" value="12:00">
+                    </div>
+                    <div class="input-group">
+                        <label for="rest-end">午休结束</label>
+                        <input type="time" id="rest-end" value="13:00">
+                    </div>
+                </div>
+            </div>
+        </main>
+
+        <footer class="footer">
+            <p>© 2023 下班倒计时 | 祝您工作愉快！</p>
+        </footer>
+    </div>
+
+    <script>
+        class WorkProgress {
+            constructor(startTime = "09:00", endTime = "18:00", restStart = "12:00", restEnd = "13:00") {
+                this.startTime = startTime;
+                this.endTime = endTime;
+                this.restStart = restStart;
+                this.restEnd = restEnd;
+                this.totalMinutes = this.calculateWorkMinutes();
+                this.morningMinutes = this.calculateMorningMinutes();
+                this.afternoonMinutes = this.calculateAfternoonMinutes();
+            }
+
+            parseTime(timeStr) {
+                const [hour, minute] = timeStr.split(":").map(Number);
+                return { hour, minute };
+            }
+
+            calculateWorkMinutes() {
+                const start = this.parseTime(this.startTime);
+                const end = this.parseTime(this.endTime);
+                const restStart = this.parseTime(this.restStart);
+                const restEnd = this.parseTime(this.restEnd);
+
+                const startMinutes = start.hour * 60 + start.minute;
+                const endMinutes = end.hour * 60 + end.minute;
+                const restStartMinutes = restStart.hour * 60 + restStart.minute;
+                const restEndMinutes = restEnd.hour * 60 + restEnd.minute;
+
+                const totalMinutes = endMinutes - startMinutes;
+                const restMinutes = restEndMinutes - restStartMinutes;
+
+                return totalMinutes - restMinutes;
+            }
+
+            calculateMorningMinutes() {
+                const start = this.parseTime(this.startTime);
+                const restStart = this.parseTime(this.restStart);
+
+                const startMinutes = start.hour * 60 + start.minute;
+                const restStartMinutes = restStart.hour * 60 + restStart.minute;
+
+                return restStartMinutes - startMinutes;
+            }
+
+            calculateAfternoonMinutes() {
+                const restEnd = this.parseTime(this.restEnd);
+                const end = this.parseTime(this.endTime);
+
+                const restEndMinutes = restEnd.hour * 60 + restEnd.minute;
+                const endMinutes = end.hour * 60 + end.minute;
+
+                return endMinutes - restEndMinutes;
+            }
+
+            getCurrentProgress() {
+                const now = new Date();
+                const today = now.getDay(); // 0 = Sunday, 6 = Saturday
+
+                // 如果是周末
+                if (today === 0 || today === 6) {
+                    return {
+                        progress: 100,
+                        message: "今天是周末，不用上班！",
+                        emoji: "🎉",
+                        timeLeft: "00:00:00",
+                        workedMinutes: 0,
+                        remainingMinutes: 0
+                    };
+                }
+
+                const nowMinutes = now.getHours() * 60 + now.getMinutes();
+                const start = this.parseTime(this.startTime);
+                const end = this.parseTime(this.endTime);
+                const restStart = this.parseTime(this.restStart);
+                const restEnd = this.parseTime(this.restEnd);
+
+                const startMinutes = start.hour * 60 + start.minute;
+                const endMinutes = end.hour * 60 + end.minute;
+                const restStartMinutes = restStart.hour * 60 + restStart.minute;
+                const restEndMinutes = restEnd.hour * 60 + restEnd.minute;
+
+                // 检查是否还没到上班时间
+                if (nowMinutes < startMinutes) {
+                    const timeLeftMinutes = startMinutes - nowMinutes;
+                    const hours = Math.floor(timeLeftMinutes / 60);
+                    const minutes = timeLeftMinutes % 60;
+                    const seconds = 60 - now.getSeconds();
+                    const timeLeftStr = `${hours.toString().padStart(2, '0')}:${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`;
+
+                    return {
+                        progress: 0,
+                        message: `上班倒计时: ${timeLeftStr}`,
+                        emoji: "😴",
+                        timeLeft: timeLeftStr,
+                        workedMinutes: 0,
+                        remainingMinutes: this.totalMinutes
+                    };
+                }
+
+                // 检查是否已经下班
+                if (nowMinutes >= endMinutes) {
+                    return {
+                        progress: 100,
+                        message: "已经下班啦！",
+                        emoji: "🎉",
+                        timeLeft: "00:00:00",
+                        workedMinutes: this.totalMinutes,
+                        remainingMinutes: 0
+                    };
+                }
+
+                // 检查是否在午休时间
+                if (nowMinutes >= restStartMinutes && nowMinutes < restEndMinutes) {
+                    const timeLeftMinutes = restEndMinutes - nowMinutes;
+                    const hours = Math.floor(timeLeftMinutes / 60);
+                    const minutes = timeLeftMinutes % 60;
+                    const seconds = 60 - now.getSeconds();
+                    const timeLeftStr = `${hours.toString().padStart(2, '0')}:${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`;
+
+                    // 午休期间进度固定为上午完成的比例
+                    const progress = (this.morningMinutes / this.totalMinutes) * 100;
+
+                    return {
+                        progress: progress,
+                        message: `午休中... ${timeLeftStr}`,
+                        emoji: "🍽️",
+                        timeLeft: timeLeftStr,
+                        workedMinutes: this.morningMinutes,
+                        remainingMinutes: this.afternoonMinutes
+                    };
+                }
+
+                // 计算当前进度
+                let workedMinutes;
+                if (nowMinutes < restStartMinutes) {
+                    // 上午工作时间
+                    workedMinutes = nowMinutes - startMinutes;
+                } else {
+                    // 下午工作时间
+                    workedMinutes = this.morningMinutes + (nowMinutes - restEndMinutes);
+                }
+
+                const progress = Math.min(100, Math.max(0, (workedMinutes / this.totalMinutes) * 100));
+
+                // 计算剩余时间
+                const remainingMinutes = this.totalMinutes - workedMinutes;
+                const hours = Math.floor(remainingMinutes / 60);
+                const minutes = Math.floor(remainingMinutes % 60);
+                const seconds = 60 - now.getSeconds();
+                const timeLeftStr = `${hours.toString().padStart(2, '0')}:${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`;
+
+                // 根据进度选择表情
+                let emoji;
+                if (progress < 30) {
+                    emoji = "😊";
+                } else if (progress < 60) {
+                    emoji = "😐";
+                } else if (progress < 80) {
+                    emoji = "😅";
+                } else {
+                    emoji = "🤩";
+                }
+
+                return {
+                    progress,
+                    message: `下班倒计时: ${timeLeftStr}`,
+                    emoji,
+                    timeLeft: timeLeftStr,
+                    workedMinutes: workedMinutes,
+                    remainingMinutes: remainingMinutes
+                };
+            }
+        }
+
+        // 初始化
+        let workProgress = new WorkProgress();
+
+        // DOM 元素
+        const emojiElement = document.getElementById('emoji');
+        const messageElement = document.getElementById('message');
+        const timeLeftElement = document.getElementById('time-left');
+        const progressPercentElement = document.getElementById('progress-percent');
+        const progressFillElement = document.getElementById('progress-fill');
+        const workedTimeElement = document.getElementById('worked-time');
+        const remainingTimeElement = document.getElementById('remaining-time');
+
+        const startTimeInput = document.getElementById('start-time');
+        const endTimeInput = document.getElementById('end-time');
+        const restStartInput = document.getElementById('rest-start');
+        const restEndInput = document.getElementById('rest-end');
+
+        // 更新时间函数
+        function updateTime() {
+            const result = workProgress.getCurrentProgress();
+
+            emojiElement.textContent = result.emoji;
+            messageElement.textContent = result.message;
+            timeLeftElement.textContent = result.timeLeft;
+            progressPercentElement.textContent = `${result.progress.toFixed(1)}%`;
+            progressFillElement.style.width = `${result.progress}%`;
+
+            // 更新已工作和剩余时间
+            const workedHours = (result.workedMinutes / 60).toFixed(1);
+            const remainingHours = (result.remainingMinutes / 60).toFixed(1);
+            workedTimeElement.textContent = `已工作: ${workedHours}小时`;
+            remainingTimeElement.textContent = `剩余: ${remainingHours}小时`;
+        }
+
+        // 初始更新
+        updateTime();
+
+        // 每秒更新一次
+        setInterval(updateTime, 1000);
+
+        // 监听时间输入变化
+        [startTimeInput, endTimeInput, restStartInput, restEndInput].forEach(input => {
+            input.addEventListener('change', () => {
+                workProgress = new WorkProgress(
+                    startTimeInput.value,
+                    endTimeInput.value,
+                    restStartInput.value,
+                    restEndInput.value
+                );
+                updateTime();
+            });
+        });
+    </script>
+</body>
+</html>
